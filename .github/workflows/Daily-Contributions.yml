@@ -1,91 +1,97 @@
-# chat.deepseek.com/a/chat/s/eb24f20e-abb9-4172-9785-5b5be59fcdce
+# chat.deepseek.com/a/chat/s/e8004a03-61c8-4dc2-b519-48115132625f
 
-# Github Actions 自动化每天贡献，
-# 随机时间贡献1-6次，
-# 追加输出日期、时间、提交次数到仓库 README.md 文件中
+# Github Actions 自动化每天随机时间贡献1-2次，
+# 将日期、标准时间、北京时间，当日提交次数，
+# 追加内容到 README.md 文件中
 
-name: Daily Contributions
+name: Daily Random Contribution
 
 on:
   schedule:
-    # 每天执行多次，但实际提交由脚本控制
-    - cron: '0 0-23 * * *'
-  workflow_dispatch:
+    # 每天UTC时间16点触发（北京时间0点），然后在1-23小时内随机延迟
+    - cron: '0 16 * * *'
+  workflow_dispatch: # 允许手动触发
 
 jobs:
   contribute:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Setup Git
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           
-      - name: Smart contribution
+      - name: Generate random time and contribute
         run: |
-          # 使用日期和小时作为种子
-          DAY=$(date +%Y%m%d)
-          HOUR=$(date +%H)
-          SEED=$((DAY + HOUR))
-          RANDOM=$SEED
+          # 生成随机延迟时间（1-23小时之间）
+          RANDOM_DELAY=$((RANDOM % 23 + 1))
+          echo "将在 $RANDOM_DELAY 小时后执行提交..."
+          sleep $((RANDOM_DELAY * 3600))
           
-          # 决定这个小时是否执行（概率控制在每天1-6次）
-          # 使用随机数决定是否提交
-          SHOULD_COMMIT=$((RANDOM % 100))
+          # 随机决定提交次数（1或2次）
+          COMMIT_COUNT=$((RANDOM % 2 + 1))
+          echo "COMMIT_COUNT=$COMMIT_COUNT" >> $GITHUB_ENV
           
-          # 如果是凌晨0-6点，降低提交概率
-          if [ $HOUR -lt 6 ]; then
-            THRESHOLD=20  # 20%概率
-          elif [ $HOUR -lt 12 ]; then
-            THRESHOLD=40  # 40%概率
-          elif [ $HOUR -lt 18 ]; then
-            THRESHOLD=60  # 60%概率
-          else
-            THRESHOLD=30  # 30%概率
-          fi
-          
-          if [ $SHOULD_COMMIT -gt $THRESHOLD ]; then
-            echo "Skipping commit at hour $HOUR"
-            exit 0
-          fi
-          
-          # 随机提交次数 1-6
-          COMMIT_COUNT=$((RANDOM % 6 + 1))
-          echo "Committing $COMMIT_COUNT times"
-          
-          CURRENT_DATE=$(date '+%Y-%m-%d')
+          echo "开始执行 $COMMIT_COUNT 次提交..."
           
           for i in $(seq 1 $COMMIT_COUNT); do
-            CURRENT_TIME=$(date '+%H:%M:%S')
+            # 每次提交之间间隔随机时间（5-45分钟）
+            if [ $i -gt 1 ]; then
+              SLEEP_TIME=$((RANDOM % 40 + 5))
+              echo "等待 $SLEEP_TIME 分钟后进行第 $i 次提交..."
+              sleep $((SLEEP_TIME * 60))
+            fi
             
-            # 更新README
-            echo "# Daily Contribution Tracker" > README.md
-            echo "" >> README.md
-            echo "## Contribution Log" >> README.md
-            echo "" >> README.md
-            echo "| Date | Time | Commit # |" >> README.md
-            echo "|------|------|----------|" >> README.md
+            # 获取当前时间
+            CURRENT_DATE=$(date '+%Y-%m-%d')
+            UTC_TIME=$(date -u '+%H:%M:%S')
+            BEIJING_TIME=$(TZ='Asia/Shanghai' date '+%H:%M:%S')
+            TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
             
-            # 追加新记录
-            echo "| $CURRENT_DATE | $CURRENT_TIME | $i/$COMMIT_COUNT |" >> README.md
+            # 创建或更新 README.md
+            if [ ! -f README.md ]; then
+              echo "# 贡献记录" > README.md
+              echo "" >> README.md
+              echo "## 📊 自动化贡献日志" >> README.md
+              echo "" >> README.md
+            fi
             
-            # 添加时间戳文件
-            echo "$CURRENT_DATE $CURRENT_TIME - Commit $i/$COMMIT_COUNT" >> CONTRIBUTION_LOG.txt
+            # 确保文件末尾有换行
+            if [ -s README.md ]; then
+              echo "" >> README.md
+            fi
             
-            git add README.md CONTRIBUTION_LOG.txt
-            git commit -m "Daily contribution #$i - $CURRENT_DATE $CURRENT_TIME"
+            # 追加贡献记录（使用更美观的格式）
+            cat >> README.md << EOF
+            ---
+            ### 🕐 贡献 #$(date '+%Y%m%d%H%M%S')
+            - **📅 日期**: $CURRENT_DATE
+            - **🕐 标准时间 (UTC)**: $UTC_TIME
+            - **🕐 北京时间**: $BEIJING_TIME
+            - **📊 当日总提交数**: $COMMIT_COUNT
+            - **🔢 当前提交**: $i / $COMMIT_COUNT
+            - **⏰ 时间戳**: $TIMESTAMP
+            
+            EOF
+            
+            # 提交更改
+            git add README.md
+            git commit -m "📝 Daily contribution $i/$COMMIT_COUNT [${TIMESTAMP}]"
+            
+            # 推送更改
             git push origin main
             
-            # 随机等待 30-180 秒
-            WAIT=$((RANDOM % 150 + 30))
-            echo "Waiting $WAIT seconds before next commit"
-            sleep $WAIT
+            echo "✅ 第 $i 次提交完成"
           done
+          
+      - name: Final status
+        run: |
+          echo "## 🎉 每日贡献完成！"
+          echo "- 提交次数: ${{ env.COMMIT_COUNT }}"
+          echo "- 执行时间: $(date '+%Y-%m-%d %H:%M:%S')"
