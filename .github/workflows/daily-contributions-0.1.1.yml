@@ -76,17 +76,16 @@ jobs:
               echo "" >> README.md
             fi
           
-            # 追加贡献记录（使用更美观的格式）
-            cat >> README.md <<-EOF
----
-### 🕐 贡献 #$(date '+%Y%m%d%H%M%S')
-- **📅 日期**: $CURRENT_DATE
-- **🕐 标准时间 (UTC)**: $UTC_TIME
-- **🕐 北京时间**: $BEIJING_TIME
-- **📊 当日总提交数**: $COMMIT_COUNT
-- **🔢 当前提交**: $i / $COMMIT_COUNT
-- **⏰ 时间戳**: $TIMESTAMP
-EOF
+            # 追加贡献记录 - 使用 echo 替代 heredoc 避免语法问题
+            echo "---" >> README.md
+            echo "### 🕐 贡献 #$(date '+%Y%m%d%H%M%S')" >> README.md
+            echo "- **📅 日期**: $CURRENT_DATE" >> README.md
+            echo "- **🕐 标准时间 (UTC)**: $UTC_TIME" >> README.md
+            echo "- **🕐 北京时间**: $BEIJING_TIME" >> README.md
+            echo "- **📊 当日总提交数**: $COMMIT_COUNT" >> README.md
+            echo "- **🔢 当前提交**: $i / $COMMIT_COUNT" >> README.md
+            echo "- **⏰ 时间戳**: $TIMESTAMP" >> README.md
+            echo "" >> README.md
           
             # 提交更改
             git add README.md
