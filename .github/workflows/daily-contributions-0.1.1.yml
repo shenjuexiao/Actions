@@ -78,14 +78,14 @@ jobs:
           
             # 追加贡献记录（使用更美观的格式）
             cat >> README.md <<-EOF
-            ---
-            ### 🕐 贡献 #$(date '+%Y%m%d%H%M%S')
-            - **📅 日期**: $CURRENT_DATE
-            - **🕐 标准时间 (UTC)**: $UTC_TIME
-            - **🕐 北京时间**: $BEIJING_TIME
-            - **📊 当日总提交数**: $COMMIT_COUNT
-            - **🔢 当前提交**: $i / $COMMIT_COUNT
-            - **⏰ 时间戳**: $TIMESTAMP
+---
+### 🕐 贡献 #$(date '+%Y%m%d%H%M%S')
+- **📅 日期**: $CURRENT_DATE
+- **🕐 标准时间 (UTC)**: $UTC_TIME
+- **🕐 北京时间**: $BEIJING_TIME
+- **📊 当日总提交数**: $COMMIT_COUNT
+- **🔢 当前提交**: $i / $COMMIT_COUNT
+- **⏰ 时间戳**: $TIMESTAMP
 EOF
           
             # 提交更改
