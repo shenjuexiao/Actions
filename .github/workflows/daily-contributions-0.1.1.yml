@@ -86,7 +86,7 @@ jobs:
             - **📊 当日总提交数**: $COMMIT_COUNT
             - **🔢 当前提交**: $i / $COMMIT_COUNT
             - **⏰ 时间戳**: $TIMESTAMP
-            EOF
+EOF
           
             # 提交更改
             git add README.md
